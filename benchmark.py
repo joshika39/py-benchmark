@@ -5,7 +5,7 @@ import csv
 import re
 from jsonservice import JsonService
 
-service = JsonService("config.json", create_if_not_exists=False)
+service = JsonService("config.example.json", create_if_not_exists=False)
 
 # Extract server details
 server = service.read("server")
