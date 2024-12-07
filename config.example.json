@@ -1,0 +1,23 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 3000
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/fibonacci",
+      "query": {
+        "n": 100
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/save",
+      "body": {
+        "filename": "test.txt",
+        "content": "Hello, World!"
+      }
+    }
+  ]
+}
