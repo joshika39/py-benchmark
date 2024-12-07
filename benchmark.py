@@ -22,19 +22,19 @@ with open(csv_file, "w", newline="") as file:
 
 # Function to parse wrk output
 def parse_wrk_output(output):
-    metrics = {}
+    _metrics = {}
     # Extract requests/sec
     reqs_match = re.search(r"Requests/sec:\s+([\d.]+)", output)
     if reqs_match:
-        metrics["Requests/sec"] = float(reqs_match.group(1))
+        _metrics["Requests/sec"] = float(reqs_match.group(1))
 
     # Extract latency stats
     latency_match = re.search(r"Latency\s+(\d+\.\d+)ms\s+(\d+\.\d+)ms\s+(\d+\.\d+)ms\s+(\d+\.\d+)ms", output)
     if latency_match:
-        metrics["Latency_Min(ms)"] = float(latency_match.group(1))
-        metrics["Latency_Max(ms)"] = float(latency_match.group(2))
-        metrics["Latency_Mean(ms)"] = float(latency_match.group(3))
-        metrics["Latency_Stdev(ms)"] = float(latency_match.group(4))
+        _metrics["Latency_Min(ms)"] = float(latency_match.group(1))
+        _metrics["Latency_Max(ms)"] = float(latency_match.group(2))
+        _metrics["Latency_Mean(ms)"] = float(latency_match.group(3))
+        _metrics["Latency_Stdev(ms)"] = float(latency_match.group(4))
 
     # Extract transfer rate
     transfer_match = re.search(r"Transfer/sec:\s+([\d.]+)(\w+)", output)
@@ -45,9 +45,9 @@ def parse_wrk_output(output):
             transfer_value *= 1024
         elif transfer_unit == "MB":
             transfer_value *= 1024 * 1024
-        metrics["Transfer/sec"] = transfer_value
+        _metrics["Transfer/sec"] = transfer_value
 
-    return metrics
+    return _metrics
 
 
 # Process each endpoint
