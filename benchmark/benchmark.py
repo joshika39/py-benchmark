@@ -6,32 +6,47 @@ import csv
 import re
 from jsonservice import JsonService
 
-service = JsonService("config.json", create_if_not_exists=False)
+service = JsonService("config.dotnet.json", create_if_not_exists=False)
+
+csv_header = ["Requests/sec_Avg", "Requests/sec_Stdev", "Requests/sec_Max",
+              "Latency_Avg(ms)", "Latency_Stdev(ms)", "Latency_Max(ms)"]
 
 # Extract server details
 server = service.read("server")
 base_url = f"http://{server['host']}:{server['port']}"
-csv_file = "benchmark_results"
+csv_file = "dotnet-results"
+
+use_one_file = True
+
+def get_file_name(endpoint: str, method: str):
+    return f"{csv_file}_{endpoint}_{method}.csv" if not use_one_file else f"{csv_file}.csv"
 
 
-def create_csv_file(endpoint: str, method: str):
-    csv_header = ["Requests/sec_Avg", "Requests/sec_Stdev", "Requests/sec_Max",
-                  "Latency_Avg(ms)", "Latency_Stdev(ms)", "Latency_Max(ms)"]
-    with open(f"{csv_file}_{endpoint}_{method}.csv", "w") as f:
+def create_csv_file(file_name: str, contents: list):
+    if use_one_file:
+        contents = ["Endpoint", "Method"] + contents
+
+    with open(file_name, "w") as f:
         writer = csv.writer(f)
-        writer.writerow(csv_header)
+        writer.writerow(contents)
+
 
 def write_csv_file(endpoint: str, method: str, metrics: dict):
-    with open(f"{csv_file}_{endpoint}_{method}.csv", "a") as f:
+    contents = [
+        metrics.get("Req/Sec_Avg", ""),
+        metrics.get("Req/Sec_Stdev", ""),
+        metrics.get("Req/Sec_Max", ""),
+        metrics.get("Latency_Avg(ms)", ""),
+        metrics.get("Latency_Stdev(ms)", ""),
+        metrics.get("Latency_Max(ms)", "")
+    ]
+
+    if use_one_file:
+        contents = [endpoint, method] + contents
+
+    with open(get_file_name(endpoint, method), "a") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            metrics.get("Req/Sec_Avg", ""),
-            metrics.get("Req/Sec_Stdev", ""),
-            metrics.get("Req/Sec_Max", ""),
-            metrics.get("Latency_Avg(ms)", ""),
-            metrics.get("Latency_Stdev(ms)", ""),
-            metrics.get("Latency_Max(ms)", "")
-        ])
+        writer.writerow(contents)
 
 
 def parse_wrk_output(output):
@@ -46,7 +61,6 @@ def parse_wrk_output(output):
         stdev_latency = float(latency_match.group(3))
         max_latency = float(latency_match.group(5))
 
-        # Convert latency units if necessary (us to ms)
         if latency_match.group(2) == "us":  # microseconds to milliseconds
             avg_latency /= 1000
         if latency_match.group(4) == "us":
@@ -73,25 +87,30 @@ def parse_wrk_output(output):
 
     return _metrics
 
+def get_url(endpoint):
+    path = endpoint["path"]
+    query = endpoint.get("query", {})
+
+    if query:
+        query_string = urllib.parse.urlencode(query)
+        full_url = f"{base_url}{path}?{query_string}"
+    else:
+        full_url = f"{base_url}{path}"
+    return full_url
+
 def main():
+    if use_one_file:
+        create_csv_file(f"{csv_file}.csv", csv_header)
+
     for endpoint in service.read("endpoints"):
         method = endpoint.get("method", "GET")
-        path = endpoint["path"]
-        query = endpoint.get("query", {})
         body = endpoint.get("body", {})
+        if not use_one_file:
+            create_csv_file(get_file_name(endpoint["path"].replace("/", "_"), method), csv_header)
+        full_url = get_url(endpoint)
 
-        create_csv_file(endpoint["path"].replace("/", "_"), method)
+        wrk_command = ["wrk", "-t8", "-c100", "-d10s"]
 
-        if query:
-            query_string = urllib.parse.urlencode(query)
-            full_url = f"{base_url}{path}?{query_string}"
-        else:
-            full_url = f"{base_url}{path}"
-
-        # Construct the wrk command
-        wrk_command = ["wrk", "-t8", "-c100", "-d10s", "--latency"]
-
-        # Add Lua script for POST requests with a body
         if method == "POST" and body:
             lua_script = f"""
             wrk.method = "POST"
@@ -102,18 +121,15 @@ def main():
                 lua_file.write(lua_script)
             wrk_command += ["-s", "post_request.lua"]
 
-        # Add the target URL to the command
         wrk_command.append(full_url)
 
-        # Run the command
-        print(f"Benchmarking {method} {full_url}...")
         result = subprocess.run(wrk_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(result.stdout)
 
-        # Parse wrk output
         metrics = parse_wrk_output(result.stdout)
         if metrics:
             write_csv_file(endpoint["path"].replace("/", "_"), method, metrics)
+
     if os.path.exists("post_request.lua"):
         os.remove("post_request.lua")
 
