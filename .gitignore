@@ -5,6 +5,10 @@
 
 *.lua
 
+*.jpg
+
+!*-results.csv
+
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml

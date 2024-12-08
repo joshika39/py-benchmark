@@ -106,7 +106,7 @@ def main():
         method = endpoint.get("method", "GET")
         body = endpoint.get("body", {})
         if not use_one_file:
-            create_csv_file(get_file_name(endpoint["path"].replace("/", "_"), method), csv_header)
+            create_csv_file(get_file_name(endpoint["path"], method), csv_header)
         full_url = get_url(endpoint)
 
         wrk_command = ["wrk", "-t8", "-c100", "-d10s"]
@@ -128,7 +128,7 @@ def main():
 
         metrics = parse_wrk_output(result.stdout)
         if metrics:
-            write_csv_file(endpoint["path"].replace("/", "_"), method, metrics)
+            write_csv_file(endpoint["path"], method, metrics)
 
     if os.path.exists("post_request.lua"):
         os.remove("post_request.lua")

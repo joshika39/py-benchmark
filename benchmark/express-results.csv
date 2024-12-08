@@ -1,0 +1,7 @@
+Endpoint,Method,Requests/sec_Avg,Requests/sec_Stdev,Requests/sec_Max,Latency_Avg(ms),Latency_Stdev(ms),Latency_Max(ms)
+/,GET,2000.0,191.62,4430.0,7.04,12.94,334.22
+factorial,GET,1800.0,275.0,7190.0,7.57,12.14,330.39
+fibonacci,GET,1790.0,194.63,4830.0,7.23,8.22,265.7
+save,POST,719.27,185.82,2720.0,37.26,79.47,824.0
+files,GET,1190.0,176.81,4290.0,11.92,20.43,463.57
+files/sample.txt,GET,1150.0,165.03,4110.0,12.14,19.73,464.01
