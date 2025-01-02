@@ -6,13 +6,18 @@ import csv
 import re
 from jsonservice import JsonService
 
-service = JsonService("config.dotnet.json", create_if_not_exists=False)
+CONFIG_FILE = "config.json"
+
+service = JsonService(CONFIG_FILE, create_if_not_exists=False)
 
 csv_header = ["Requests/sec_Avg", "Requests/sec_Stdev", "Requests/sec_Max",
               "Latency_Avg(ms)", "Latency_Stdev(ms)", "Latency_Max(ms)"]
 
-# Extract server details
 server = service.read("server")
+if not server:
+    print("Server details not found in config file")
+    exit(1)
+
 base_url = f"http://{server['host']}:{server['port']}"
 csv_file = "dotnet-results"
 
